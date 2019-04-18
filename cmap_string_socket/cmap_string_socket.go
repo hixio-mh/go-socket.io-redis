@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"hash/fnv"
 	"sync"
-	"github.com/googollee/go-socket.io"
+	"github.com/pschlump/socketio" // changed from googlee
 )
 
 var SHARD_COUNT = 32
