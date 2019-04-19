@@ -3,19 +3,25 @@ package redis
 import (
 	"log"
 	"strings"
+
 	//"github.com/googollee/go-socket.io" // old version
+	// 	"github.com/go-redis/redis"
 	"github.com/garyburd/redigo/redis"
-	"github.com/nu7hatch/gouuid"
 	"github.com/memory-com/go-socket.io-redis/cmap_string_cmap"
 	"github.com/memory-com/go-socket.io-redis/cmap_string_socket"
+	uuid "github.com/nu7hatch/gouuid"
+
 	// "github.com/vmihailenco/msgpack"  // screwed up types after decoding
 	"encoding/json"
+
 	"github.com/pschlump/socketio" // 2.0 version
 )
 
 type broadcast struct {
-	host   string
-	port   string
+	host      string
+	port      string
+	password string // allow password for EC2 debug etc // anti-pattern, but allow it
+	// note, redis can be dictionary attacked 1000's of times per minute, so not good idea in production
 	pub    redis.PubSubConn
 	sub    redis.PubSubConn
 	prefix string
@@ -25,12 +31,6 @@ type broadcast struct {
 	rooms  cmap_string_cmap.ConcurrentMap
 }
 
-//
-// opts: {
-//   "host": "127.0.0.1",
-//   "port": "6379"
-//   "prefix": "socket.io"
-// }
 func Redis(opts map[string]string) socketio.BroadcastAdaptor {
 	b := broadcast{
 		rooms: cmap_string_cmap.New(),
@@ -49,20 +49,39 @@ func Redis(opts map[string]string) socketio.BroadcastAdaptor {
 	if !ok {
 		b.prefix = "socket.io"
 	}
+	b.password, ok = opts["password"]
+	if !ok {
+		b.prefix = ""
+	}
+
+	//var options = new(redis.DialOption)
+	////options.f =
+	//options.password= b.password
 
 	pub, err := redis.Dial("tcp", b.host+":"+b.port)
 	if err != nil {
 		panic(err)
 	}
+	if len(b.password) > 0 {
+		_, err := pub.Do("AUTH", b.password)
+		if err != nil {
+			// handle error
+		}
+	}
 	sub, err := redis.Dial("tcp", b.host+":"+b.port)
 	if err != nil {
 		panic(err)
 	}
-
+	if len(b.password) > 0 {
+		_, err := sub.Do("AUTH", b.password)
+		if err != nil {
+			// handle error
+		}
+	}
 	b.pub = redis.PubSubConn{Conn: pub}
 	b.sub = redis.PubSubConn{Conn: sub}
 
-	uid, err := uuid.NewV4();
+	uid, err := uuid.NewV4()
 	if err != nil {
 		log.Println("error generating uid:", err)
 		return nil
@@ -100,7 +119,7 @@ func Redis(opts map[string]string) socketio.BroadcastAdaptor {
 }
 
 func (b broadcast) onmessage(channel string, data []byte) error {
-	pieces := strings.Split(channel, "#");
+	pieces := strings.Split(channel, "#")
 	uid := pieces[len(pieces)-1]
 	if b.uid == uid {
 		log.Println("ignore same uid")
@@ -132,7 +151,7 @@ func (b broadcast) onmessage(channel string, data []byte) error {
 		message = ""
 	}
 
-	b.remote = true;
+	b.remote = true
 	b.Send(ignore, room, message, args...)
 	return nil
 }
