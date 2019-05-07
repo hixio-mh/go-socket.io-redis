@@ -18,18 +18,18 @@ import (
 )
 
 type broadcast struct {
-	host      string
-	port      string
+	host     string
+	port     string
 	password string // allow password for EC2 debug etc // anti-pattern, but allow it
-	db int // allow DB number (integer, 0-15)
-	pub    redis.PubSubConn
-	sub    redis.PubSubConn
-	sub    redis.PubSubConn
-	prefix string
-	uid    string
-	key    string
-	remote bool
-	rooms  cmap_string_cmap.ConcurrentMap
+	db       string // allow DB number (integer, 0-15)
+	pub      redis.PubSubConn
+	sub      redis.PubSubConn
+
+	prefix   string
+	uid      string
+	key      string
+	remote   bool
+	rooms    cmap_string_cmap.ConcurrentMap
 }
 
 func Redis(opts map[string]string) socketio.BroadcastAdaptor {
@@ -57,7 +57,7 @@ func Redis(opts map[string]string) socketio.BroadcastAdaptor {
 
 	b.db, ok = opts["db"]
 	if !ok {
-		b.db = 0
+		b.db = "0"
 	}
 
 	//var options = new(redis.DialOption)
@@ -74,12 +74,15 @@ func Redis(opts map[string]string) socketio.BroadcastAdaptor {
 			// handle error
 		}
 	}
-	if b.db > -1 {
+	if len(b.db )>0 {
 		_, err := pub.Do("SELECT", b.db)
 		if err != nil {
 			// handle error
 		}
 	}
+
+
+
 	sub, err := redis.Dial("tcp", b.host+":"+b.port)
 	if err != nil {
 		panic(err)
@@ -90,6 +93,14 @@ func Redis(opts map[string]string) socketio.BroadcastAdaptor {
 			// handle error
 		}
 	}
+	if len(b.db )>0 {
+		_, err := sub.Do("SELECT", b.db)
+		if err != nil {
+			// handle error
+		}
+	}
+
+
 	b.pub = redis.PubSubConn{Conn: pub}
 	b.sub = redis.PubSubConn{Conn: sub}
 
