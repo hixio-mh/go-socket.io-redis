@@ -21,7 +21,7 @@ type broadcast struct {
 	host      string
 	port      string
 	password string // allow password for EC2 debug etc // anti-pattern, but allow it
-	db string // allow DB number (integer, 0-15)
+	db int // allow DB number (integer, 0-15)
 	pub    redis.PubSubConn
 	sub    redis.PubSubConn
 	sub    redis.PubSubConn
