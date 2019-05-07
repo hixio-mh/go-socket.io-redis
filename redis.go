@@ -21,8 +21,9 @@ type broadcast struct {
 	host      string
 	port      string
 	password string // allow password for EC2 debug etc // anti-pattern, but allow it
-	// note, redis can be dictionary attacked 1000's of times per minute, so not good idea in production
+	db string // allow DB number (integer, 0-15)
 	pub    redis.PubSubConn
+	sub    redis.PubSubConn
 	sub    redis.PubSubConn
 	prefix string
 	uid    string
@@ -54,6 +55,11 @@ func Redis(opts map[string]string) socketio.BroadcastAdaptor {
 		b.prefix = ""
 	}
 
+	b.db, ok = opts["db"]
+	if !ok {
+		b.db = 0
+	}
+
 	//var options = new(redis.DialOption)
 	////options.f =
 	//options.password= b.password
@@ -64,6 +70,12 @@ func Redis(opts map[string]string) socketio.BroadcastAdaptor {
 	}
 	if len(b.password) > 0 {
 		_, err := pub.Do("AUTH", b.password)
+		if err != nil {
+			// handle error
+		}
+	}
+	if b.db > -1 {
+		_, err := pub.Do("SELECT", b.db)
 		if err != nil {
 			// handle error
 		}
