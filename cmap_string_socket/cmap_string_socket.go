@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"hash/fnv"
 	"sync"
-	"github.com/pschlump/socketio" // changed from googlee
+	"github.com/memory-com/socketio" // changed from googlee
 )
 
 var SHARD_COUNT = 32

@@ -14,7 +14,7 @@ import (
 	// "github.com/vmihailenco/msgpack"  // screwed up types after decoding
 	"encoding/json"
 
-	"github.com/pschlump/socketio" // 2.0 version
+	"github.com/memory-com/socketio" // 2.0 version
 )
 
 type broadcast struct {
@@ -25,11 +25,11 @@ type broadcast struct {
 	pub      redis.PubSubConn
 	sub      redis.PubSubConn
 
-	prefix   string
-	uid      string
-	key      string
-	remote   bool
-	rooms    cmap_string_cmap.ConcurrentMap
+	prefix string
+	uid    string
+	key    string
+	remote bool
+	rooms  cmap_string_cmap.ConcurrentMap
 }
 
 func Redis(opts map[string]string) socketio.BroadcastAdaptor {
@@ -74,14 +74,12 @@ func Redis(opts map[string]string) socketio.BroadcastAdaptor {
 			// handle error
 		}
 	}
-	if len(b.db )>0 {
+	if len(b.db) > 0 {
 		_, err := pub.Do("SELECT", b.db)
 		if err != nil {
 			// handle error
 		}
 	}
-
-
 
 	sub, err := redis.Dial("tcp", b.host+":"+b.port)
 	if err != nil {
@@ -93,13 +91,12 @@ func Redis(opts map[string]string) socketio.BroadcastAdaptor {
 			// handle error
 		}
 	}
-	if len(b.db )>0 {
+	if len(b.db) > 0 {
 		_, err := sub.Do("SELECT", b.db)
 		if err != nil {
 			// handle error
 		}
 	}
-
 
 	b.pub = redis.PubSubConn{Conn: pub}
 	b.sub = redis.PubSubConn{Conn: sub}
